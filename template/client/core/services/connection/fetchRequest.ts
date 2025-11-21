@@ -57,7 +57,7 @@ export interface FetchResponse<T = any> {
     response?: T | null;
     message?: string | null;
     errors?: any[] | null;
-	raw?: Response;
+	raw: Response;
 };
 
 export interface ServerResponse<T = any> {
