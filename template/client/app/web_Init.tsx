@@ -32,7 +32,6 @@ export function InitWebRoot(): ReactDOM.Root {
         document.body.appendChild(appNode);
     }
     document.title = 'App';	
-    //appNode.id = 'app_' + preparedTitle.toLowerCase();	
 
     appNode.style.display = 'flex';
     appNode.style.minHeight = '100vh';
@@ -41,21 +40,6 @@ export function InitWebRoot(): ReactDOM.Root {
     appNode.style.fontSize = '1rem';
     //appNode.style.fontFamily = style.main.fontFamily;
     appNode.style.backgroundColor = '#fff';
-    appNode.innerHTML = "qwesto";
-    
-    let modalRoot = document.getElementById('modal-root');
-    if (!modalRoot) {
-        modalRoot = document.createElement('div');
-        modalRoot.id = 'modal-root';
-        document.body.appendChild(modalRoot);
-    }
-    
-    let notifyRoot = document.getElementById('notify-root');
-    if (!notifyRoot) {
-        notifyRoot = document.createElement('div');
-        notifyRoot.id = 'notify-root';
-        document.body.appendChild(notifyRoot);
-    }
     
     return ReactDOM.createRoot(appNode);
 }
