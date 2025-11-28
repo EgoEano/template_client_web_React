@@ -8,13 +8,21 @@ import React, {
     useRef
  } from "react";
 import { Dimensions } from 'react-native';
+import { templateTokens, createSemantics, createComponents } from "@client/core/ui/styles/themes";
 
 import type { ReactNode } from 'react';
+import type { Theme, StyleTokens } from "@client/core/types/themeTypes";
 
+
+type DeepPartial<T> = {
+    [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
 
 interface StyleProviderContext {
     styles: Record<string, Record<string, any>>;
-    dimensions: React.MutableRefObject<CustomDimensions>;
+    dimensions: CustomDimensions;
+    theme: Theme | null;
+    createTheme: (partialTokens?: DeepPartial<StyleTokens> | null) => void;
     add: (name: string, styleVariants: any) => void;
     addGroup: (group: Record<string, any>) => void;
 
@@ -50,10 +58,12 @@ const StyleContext = createContext<StyleProviderContext | null>(null);
 
 export const StyleProvider = ({children}: { children: ReactNode }) => {
     const [version, setVersion] = useState(0);
-    const styles = useRef<Record<string, any>>({});
+    const stylesRef = useRef<Record<string, any>>({});
+    const themeRef = useRef<Theme | null>(null);
     const screenCategory = useRef<ScreenCategory>(getScreenCategory());
-    const dimensions = useRef<CustomDimensions>(getDimensions());
+    const dimensionsRef = useRef<CustomDimensions>(getDimensions());
 
+    const updateUI = () => setVersion(v => v + 1);
 
     const add = useCallback((name: string, styleVariants: any) => {
         if (typeof name !== 'string' || name.trim().length === 0) {
@@ -65,7 +75,7 @@ export const StyleProvider = ({children}: { children: ReactNode }) => {
             return;
         }        
 
-        styles.current[name] = {
+        stylesRef.current[name] = {
             main: styleVariants?.main || styleVariants || {},
             compact: styleVariants?.compact || {},
             spacious: styleVariants?.spacious || {},
@@ -82,14 +92,14 @@ export const StyleProvider = ({children}: { children: ReactNode }) => {
         for (const [name, styleVariants] of Object.entries(group)) {
             add(name, styleVariants);
         }
-        setVersion(v => v + 1);
+        updateUI();
 
     };   
     
-    const computedStyles = useMemo<Record<string, Record<string, any>>>(() => {
+    const styles = useMemo<Record<string, Record<string, any>>>(() => {
         const category = screenCategory.current;
         const result: Record<string, Record<string, any>> = {};
-        for (const [name, variants] of Object.entries(styles.current as Record<
+        for (const [name, variants] of Object.entries(stylesRef.current as Record<
             string,
             { main?: Record<string, any>; compact?: Record<string, any>; spacious?: Record<string, any> }
         >)) {
@@ -101,15 +111,20 @@ export const StyleProvider = ({children}: { children: ReactNode }) => {
         return result;
     }, [version]);
 
+    const createTheme = (partialTokens?: DeepPartial<StyleTokens> | null) => {
+        themeRef.current = buildTheme(partialTokens);
+        updateUI();
+    };
+
     useEffect(() => {
         const handleResize = (dims: DimensionsArgs) => {
             if (!dims.window) return;
 
             const newCategory = getScreenCategory(dims.window.width);
             screenCategory.current = newCategory;
-            dimensions.current = getDimensions();
+            dimensionsRef.current = getDimensions();
 
-            setVersion(v => v + 1);
+            updateUI();
         };
 
         const subscription = Dimensions.addEventListener("change", handleResize);
@@ -118,8 +133,14 @@ export const StyleProvider = ({children}: { children: ReactNode }) => {
 
 
     const value = useMemo<StyleProviderContext>(() => ({
-        styles: computedStyles,
-        dimensions,
+        styles,
+        get dimensions() {
+            return dimensionsRef.current;
+        },
+        get theme() {
+            return themeRef.current;
+        },
+        createTheme,
         add,
         addGroup,
     }),[version]);
@@ -137,4 +158,59 @@ export const useStyleContext = (): StyleProviderContext => {
       throw new Error('useStyleContext must be used within a StyleProvider');
     }
     return context;
-  };
+};
+
+export const buildTheme = (partialTokens?: DeepPartial<StyleTokens> | null): Theme => {
+    const mergedTokens: StyleTokens = {
+        colors: partialTokens?.colors ? {
+            ...templateTokens.colors,
+            ...(partialTokens?.colors || {})
+        } : templateTokens.colors,
+        sizes: partialTokens?.sizes ? {
+            spacing: {
+                ...templateTokens.sizes.spacing,
+                ...(partialTokens?.sizes.spacing || {})
+            },
+            radius: {
+                ...templateTokens.sizes.radius,
+                ...(partialTokens?.sizes.radius || {})
+            },
+            borderWidth: {
+                ...templateTokens.sizes.borderWidth,
+                ...(partialTokens?.sizes.borderWidth || {})
+            },
+            backdrop: {
+                ...templateTokens.sizes.backdrop,
+                ...(partialTokens?.sizes.backdrop || {})
+            }
+        } : templateTokens.sizes,
+        typography: partialTokens?.typography ? {
+            fontFamily: partialTokens?.typography.fontFamily ?? templateTokens.typography.fontFamily,
+            fontSize: {
+                ...templateTokens.typography.fontSize,
+                ...(partialTokens?.typography.fontSize || {})
+            },
+            fontWeight: {
+                ...templateTokens.typography.fontWeight,
+                ...(partialTokens?.typography.fontWeight || {})
+            },
+            lineHeight: {
+                ...templateTokens.typography.lineHeight,
+                ...(partialTokens?.typography.lineHeight || {})
+            }
+        } : templateTokens.typography,
+        elevation: {
+            ...templateTokens.elevation,
+            ...(partialTokens?.elevation || {})
+        }
+    };
+
+    const semantics = createSemantics(mergedTokens);
+    const components = createComponents(mergedTokens, semantics);
+
+    return {
+        tokens: mergedTokens,
+        semantics,
+        components
+    };
+};

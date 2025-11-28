@@ -12,7 +12,7 @@ import dotenv from 'dotenv';
 const clientDevView = "index";
 
 const clientEntries = {
-    index: "./index-web.ts",
+    index: "./index.web.ts",
 };
 
 

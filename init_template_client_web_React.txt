@@ -1,3 +1,18 @@
+# copy project from template folder into target dir
+
+# init node modules
+	npm i
+
+# build dev (App_client_build_dev.bat) or prod (App_client_build_prod.bat) variant
+
+# start dev server with App_client_start_dev.bat
+
+
+#####################################################
+
+
+# OPTIONAL How to init manually
+
 # Initialize project
 	npm init -y
 	

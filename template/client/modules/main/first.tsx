@@ -3,7 +3,7 @@ import { View, Text, Button } from 'react-native';
 
 export function FirstScreen() {
   useEffect(() => {
-    document.title = "Первая";
+    document.title = "First";
   }, []);
   
   return (
