@@ -1,15 +1,13 @@
 @echo off
 
-set "TARGET=X:\iHolding\dev"
-
-cd /d "%TARGET%"
+cd /d %~dp0
 
 git add .
 
 git diff --cached --quiet
 if %errorlevel%==0 (
     echo "Nothing to commit"
-	timeout /t 20
+	pause
     exit /b
 )
 	
